@@ -1,0 +1,4 @@
+clearml==1.3.2
+pytest==7.1.2
+pytest-mock==3.7.0
+tox==3.25.0
