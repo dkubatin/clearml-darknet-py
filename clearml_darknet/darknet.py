@@ -298,6 +298,8 @@ class Darknet:
         :param obj_data: Path to the obj.data file.
         :param type_: Network type `detector`/`classifier`.
         """
+        self.__task.connect(self.__net_hyperparameters)
+
         command: list = [self.__darknet_exec, type_, "train", obj_data, self.__config_path, '-dont_show']
         command.append(self.__weight_path) if self.__weight_path else ...
         command.append('-map') if kwargs.get('calc_map') else ...
