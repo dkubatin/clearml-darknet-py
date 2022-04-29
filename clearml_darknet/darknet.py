@@ -10,7 +10,7 @@ import subprocess
 
 from clearml import Task
 
-from .errors import DatasetError
+from .errors import DatasetError, ConfigParseError
 
 
 def extension_filter(extension: str, filename: str) -> bool:
@@ -111,6 +111,8 @@ class Darknet:
         if len(valid) == 0:
             raise ValueError('List of validating samples is empty.')
 
+        self.__net_hyperparameters = {}
+
         with open(self.__classes_path, 'r') as f:
             self.classes_num = len(f.readlines())
 
@@ -119,6 +121,7 @@ class Darknet:
         self.train_txt_path = os.path.join(self.temp_dir_path, 'train.txt')
         self.valid_txt_path = os.path.join(self.temp_dir_path, 'valid.txt')
 
+        self._parse_hyperparameters_config()
         self._gen_txt_file(self.train_txt_path, train)
         self._gen_txt_file(self.valid_txt_path, valid)
 
@@ -219,6 +222,35 @@ class Darknet:
         accuracy_re = re.findall(r"accuracy top1 = ([\d.]+)", line)
         if accuracy_re:
             return float(accuracy_re[0]) * 100
+
+    def _parse_hyperparameters_config(self) -> None:
+        """Parses hyperparameters from the neural network configuration file."""
+        NET_SECTION = '[net]'
+
+        try:
+            with open(self.__config_path, 'r') as f:
+                self.__config_content = f.readlines()
+        except Exception:
+            raise ConfigParseError('Error reading network config file')
+
+        for line in self.__config_content:
+            line = line.replace('\n', '')
+            if not line:
+                continue
+            if (line.startswith('[') and line.endswith(']')) and line != NET_SECTION:
+                break
+            if line[0] == '#' or line == NET_SECTION:
+                continue
+            result = line.split('=')
+            if result and len(result) > 1:
+                param_name, param_value = result
+                param_name = param_name.strip()
+                param_value = param_value.strip()
+
+                if len(param_name.split(' ')) > 1 or len(param_value) == 0:
+                    raise ConfigParseError(f"Error reading parameter='{param_name}' of network config")
+
+                self.__net_hyperparameters[param_name] = param_value
 
     def _gen_obj_file(self, type_: str, top: int = None) -> str:
         """Generates the obj.data file.
