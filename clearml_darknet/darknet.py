@@ -150,7 +150,7 @@ class Darknet:
         :param line: Text string.
         :return: iteration | None.
         """
-        iteration_re = re.findall(r"(\d+)[,|:] [\d.]+[,|:] [\[\d.]+|], ([\d.]+) avg", line)
+        iteration_re = re.findall(r"^([\d ]+)[,|:] [\d.|\-nan]+[,|:] [\[\d.|\-nan]+|], ([\d.|\-nan]+) avg", line)
         if iteration_re:
             return int(iteration_re[0][0])
 
@@ -161,7 +161,7 @@ class Darknet:
         :param line: Text string.
         :return: avg_loss | None.
         """
-        loss_re = re.findall(r"[\d.]+, ([\d.]+) avg", line)
+        loss_re = re.findall(r"[\d.|\-nan]+, ([\d.|\-nan]+) avg", line)
         if loss_re:
             return float(loss_re[0])
 
@@ -183,7 +183,7 @@ class Darknet:
         :param line: Text string.
         :return: precision | None
         """
-        precision_re = re.findall(r"precision = ([\d]*\.[\d]*)", line)
+        precision_re = re.findall(r"precision = ([\d]*\.[\d]*|-nan)", line)
         if precision_re:
             return float(precision_re[0])
 
@@ -194,7 +194,7 @@ class Darknet:
         :param line: Text string.
         :return: recall | None
         """
-        recall_re = re.findall(r"recall = ([\d]*\.[\d]*)", line)
+        recall_re = re.findall(r"recall = ([\d]*\.[\d]*|-nan)", line)
         if recall_re:
             return float(recall_re[0])
 
@@ -205,7 +205,7 @@ class Darknet:
         :param line: Text string.
         :return: f1-score | None
         """
-        f1_score_re = re.findall(r"F1-score = ([\d]*\.[\d]*)", line)
+        f1_score_re = re.findall(r"F1-score = ([\d]*\.[\d]*|-nan)", line)
         if f1_score_re:
             return float(f1_score_re[0])
 
