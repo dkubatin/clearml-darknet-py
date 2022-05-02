@@ -224,6 +224,17 @@ class Darknet:
         if accuracy_re:
             return float(accuracy_re[0]) * 100
 
+    @staticmethod
+    def _parse_hyperparameter(line: str) -> typing.Optional[typing.Any]:
+        """Parses a string to find the parameter name and value.
+
+        :param line: Text string.
+        :return: (name, value) | None
+        """
+        result_re = re.findall(r"^([a-z_]+)[= ]+([a-z|\d.,]+)$", line)
+        if result_re:
+            return result_re[0][0], result_re[0][1]
+
     def _parse_hyperparameters_config(self) -> None:
         """Parses hyperparameters from the neural network configuration file."""
         NET_SECTION = '[net]'
@@ -236,22 +247,17 @@ class Darknet:
 
         for line in self.__config_content:
             line = line.replace('\n', '')
-            if not line:
+            if not line or (line[0] == '#' or line == NET_SECTION):
                 continue
             if (line.startswith('[') and line.endswith(']')) and line != NET_SECTION:
                 break
-            if line[0] == '#' or line == NET_SECTION:
-                continue
-            result = line.split('=')
-            if result and len(result) > 1:
-                param_name, param_value = result
-                param_name = param_name.strip()
-                param_value = param_value.strip()
 
-                if len(param_name.split(' ')) > 1 or len(param_value) == 0:
-                    raise ConfigParseError(f"Error reading parameter='{param_name}' of network config")
+            result = self._parse_hyperparameter(line)
+            if not result:
+                raise ConfigParseError(f"Error reading parameter '{line}' of network config")
 
-                self.__net_hyperparameters[param_name] = param_value
+            param_name, param_value = result
+            self.__net_hyperparameters[param_name] = param_value
 
     def _gen_cfg_file(self) -> str:
         """Generates a new network config.
