@@ -10,7 +10,7 @@ import subprocess
 
 from clearml import Task
 
-from .errors import DatasetError
+from .errors import DatasetError, ConfigParseError
 
 
 def extension_filter(extension: str, filename: str) -> bool:
@@ -111,6 +111,9 @@ class Darknet:
         if len(valid) == 0:
             raise ValueError('List of validating samples is empty.')
 
+        self.__task_hyperparameters = self.__task.get_parameters_as_dict()
+        self.__net_hyperparameters = {}
+
         with open(self.__classes_path, 'r') as f:
             self.classes_num = len(f.readlines())
 
@@ -119,6 +122,7 @@ class Darknet:
         self.train_txt_path = os.path.join(self.temp_dir_path, 'train.txt')
         self.valid_txt_path = os.path.join(self.temp_dir_path, 'valid.txt')
 
+        self._parse_hyperparameters_config()
         self._gen_txt_file(self.train_txt_path, train)
         self._gen_txt_file(self.valid_txt_path, valid)
 
@@ -220,6 +224,78 @@ class Darknet:
         if accuracy_re:
             return float(accuracy_re[0]) * 100
 
+    @staticmethod
+    def _parse_hyperparameter(line: str) -> typing.Optional[typing.Any]:
+        """Parses a string to find the parameter name and value.
+
+        :param line: Text string.
+        :return: (name, value) | None
+        """
+        result_re = re.findall(r"^([a-z_]+)[= ]+([a-z|\d.,]+)$", line)
+        if result_re:
+            return result_re[0][0], result_re[0][1]
+
+    @staticmethod
+    def _parse_section(line: str) -> typing.Optional[str]:
+        """Parses a string to find the config section name.
+
+        :param line: Text string.
+        :return: name | None
+        """
+        result_re = re.findall(r"([\[a-z]+])", line)
+        if result_re:
+            return result_re[0]
+
+    def _parse_hyperparameters_config(self) -> None:
+        """Parses hyperparameters from the neural network configuration file."""
+        NET_SECTION = '[net]'
+
+        try:
+            with open(self.__config_path, 'r') as f:
+                self.__config_content = f.readlines()
+        except Exception:
+            raise ConfigParseError('Error reading network config file')
+
+        for line in self.__config_content:
+            line = line.strip()
+            if not line:
+                continue
+
+            section = self._parse_section(line)
+            if section and section != NET_SECTION:
+                break
+            if section and section == NET_SECTION or line[0] == '#':
+                continue
+
+            result = self._parse_hyperparameter(line)
+            if not result:
+                raise ConfigParseError(f"Error reading parameter '{line}' of network config")
+
+            param_name, param_value = result
+            self.__net_hyperparameters[param_name] = param_value
+
+    def _gen_cfg_file(self) -> str:
+        """Generates a new network config.
+
+        :return: Path to the generated network config file.
+        """
+        cfg_name = os.path.basename(self.__config_path)
+        cfg_file_path = os.path.join(self.temp_dir_path, f'{cfg_name}')
+
+        content = []
+        for raw_line in self.__config_content:
+            result = raw_line.strip().split('=')
+            if result and len(result[0]) != 0:
+                param_name = result[0].strip()
+                if self.__task_hyperparameters['General'].get(param_name):
+                    raw_line = f"{param_name}={self.__task_hyperparameters['General'][param_name]}\n"
+            content.append(raw_line)
+
+        with open(cfg_file_path, 'w') as f:
+            f.writelines(content)
+
+        return cfg_file_path
+
     def _gen_obj_file(self, type_: str, top: int = None) -> str:
         """Generates the obj.data file.
 
@@ -266,6 +342,10 @@ class Darknet:
         :param obj_data: Path to the obj.data file.
         :param type_: Network type `detector`/`classifier`.
         """
+        if self.__task_hyperparameters:
+            self.__config_path = self._gen_cfg_file()
+        self.__task.connect(self.__net_hyperparameters)
+
         command: list = [self.__darknet_exec, type_, "train", obj_data, self.__config_path, '-dont_show']
         command.append(self.__weight_path) if self.__weight_path else ...
         command.append('-map') if kwargs.get('calc_map') else ...
