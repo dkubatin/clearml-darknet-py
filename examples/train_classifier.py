@@ -17,7 +17,7 @@ task.execute_remotely(queue_name='default', clone=False, exit_process=True)
 darknet = Darknet(
     task=task,
     darknet_exec='/opt/darknet/darknet',
-    config_path='darknet19.cfg',
+    config_path='data/darknet19.cfg',
     classes_path=classes,
     train=train,
     valid=valid,

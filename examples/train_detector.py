@@ -17,7 +17,7 @@ task.execute_remotely(queue_name='default', clone=False, exit_process=True)
 darknet = Darknet(
     task=task,
     darknet_exec='/opt/darknet/darknet',
-    config_path='yolov3-tiny.cfg',
+    config_path='data/yolov3-tiny.cfg',
     classes_path=classes,
     train=train,
     valid=valid,
