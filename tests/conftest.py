@@ -42,7 +42,5 @@ def darknet(tmpdir):
     tmp_path = tmpdir.mkdir("darknet")
     darknet = tmp_path / "darknet"
     darknet.write_binary(b'...')
-    darknet19 = tmp_path / "darknet19.cfg"
-    darknet19.write_text('...', encoding='utf-8')
     yield darknet
     shutil.rmtree(str(tmp_path))
