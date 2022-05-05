@@ -235,6 +235,17 @@ class Darknet:
         if result_re:
             return result_re[0][0], result_re[0][1]
 
+    @staticmethod
+    def _parse_section(line: str) -> typing.Optional[str]:
+        """Parses a string to find the config section name.
+
+        :param line: Text string.
+        :return: name | None
+        """
+        result_re = re.findall(r"([[a-z]+])", line)
+        if result_re:
+            return result_re[0]
+
     def _parse_hyperparameters_config(self) -> None:
         """Parses hyperparameters from the neural network configuration file."""
         NET_SECTION = '[net]'
@@ -246,11 +257,15 @@ class Darknet:
             raise ConfigParseError('Error reading network config file')
 
         for line in self.__config_content:
-            line = line.replace('\n', '')
-            if not line or (line[0] == '#' or line == NET_SECTION):
+            line = line.strip()
+            if not line:
                 continue
-            if (line.startswith('[') and line.endswith(']')) and line != NET_SECTION:
+
+            section = self._parse_section(line)
+            if section and section != NET_SECTION:
                 break
+            if section and section == NET_SECTION or line[0] == '#':
+                continue
 
             result = self._parse_hyperparameter(line)
             if not result:
