@@ -284,8 +284,7 @@ class Darknet:
 
         content = []
         for raw_line in self.__config_content:
-            line = raw_line.replace('\n', '')
-            result = line.split('=')
+            result = raw_line.strip().split('=')
             if result and len(result[0]) != 0:
                 param_name = result[0].strip()
                 if self.__task_hyperparameters['General'].get(param_name):
