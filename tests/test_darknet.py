@@ -147,3 +147,13 @@ def test_darknet_init_failed_valid_empty(dataset_path, task, darknet):
             train=train,
             valid=valid,
         )
+
+
+def test_darknet_init_failed_reading_config():
+    # ToDo: add test
+    pass
+
+
+def test_darknet_init_failed_reading_parameter_config():
+    # ToDo: add test
+    pass
