@@ -242,7 +242,7 @@ class Darknet:
         :param line: Text string.
         :return: name | None
         """
-        result_re = re.findall(r"([[a-z]+])", line)
+        result_re = re.findall(r"([\[a-z]+])", line)
         if result_re:
             return result_re[0]
 
