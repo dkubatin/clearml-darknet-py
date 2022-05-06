@@ -117,6 +117,17 @@ class Darknet:
             return int(iteration_re[0][0])
 
     @staticmethod
+    def _parse_learning_rate(line: str) -> typing.Optional[float]:
+        """Parses a string to find the value learning rate (lr).
+
+        :param line: Text string.
+        :return: lr | None
+        """
+        lr_re = re.findall(r"([\d.]+) rate", line)
+        if lr_re:
+            return float(lr_re[0])
+
+    @staticmethod
     def _parse_avg_loss(line: str) -> typing.Optional[float]:
         """Parses a string to find the value of average loss.
 
@@ -282,9 +293,10 @@ class Darknet:
         """Parses strings to find result values.
 
         :param line: Text string.
-        :return: iteration, avg_loss, map, precision, recall, f1_score, accuracy
+        :return: iteration, learning_rate, avg_loss, map, precision, recall, f1_score, accuracy
         """
         iteration = self._parse_iteration(line)
+        learning_rate = self._parse_learning_rate(line)
         avg_loss = self._parse_avg_loss(line)
         mean_avg_precision = self._parse_map(line)
         precision = self._parse_precision(line)
@@ -292,7 +304,7 @@ class Darknet:
         f1_score = self._parse_f1_score(line)
         accuracy = self._parse_accuracy(line)
 
-        return iteration, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy
+        return iteration, learning_rate, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy
 
     def _train(self, obj_data: str, type_: str, **kwargs) -> None:
         """Running network training.
@@ -322,11 +334,15 @@ class Darknet:
 
             print(line_decoded)
 
-            iteration, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy = \
+            iteration, learning_rate, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy = \
                 self._process_output(line_decoded)
 
             if iteration is not None:
                 last_iteration = iteration
+            if learning_rate:
+                self.__task.logger.report_scalar(
+                    title='learning rate', series='series', value=learning_rate, iteration=last_iteration
+                )
             if avg_loss:
                 self.__task.logger.report_scalar(
                     title='avg_loss', series='series', value=avg_loss, iteration=last_iteration
