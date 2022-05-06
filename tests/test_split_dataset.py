@@ -9,6 +9,11 @@ def test_split_dataset(dataset_path):
     assert len(train) == len(valid)
 
 
+def test_split_dataset_hierarchy(dataset_hierarchy_path):
+    train, valid = split_dataset(dataset_path=dataset_hierarchy_path, ratio=0.5)
+    assert len(train) == len(valid)
+
+
 def test_split_dataset_shuffle_true(dataset_path):
     train_no_shuffle, valid_no_shuffle = split_dataset(dataset_path=dataset_path, ratio=0.5)
     train_shuffle, valid_shuffle = split_dataset(dataset_path=dataset_path, ratio=0.5, shuffle=True)

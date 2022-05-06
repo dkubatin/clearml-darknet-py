@@ -39,12 +39,16 @@ def split_dataset(dataset_path: str, ratio: float, shuffle: bool = False) -> typ
     """
     if 0.0 > ratio or ratio >= 1.0:
         raise ValueError('The ration coefficient must be within the limits 0.0 < ratio < 1.0')
-    list_dataset_images = [
-        os.path.join(dataset_path, filename) for filename in os.listdir(dataset_path)
-        if extension_filter('image', filename)
-    ]
+
+    list_dataset_images = []
+    for dirs, paths, files in os.walk(dataset_path):
+        for filename in files:
+            if extension_filter('image', filename):
+                list_dataset_images.append(os.path.join(dirs, filename))
+
     if not list_dataset_images:
         raise DatasetError(f'No images found in dataset={dataset_path}')
+
     if shuffle:
         random.shuffle(list_dataset_images)
 
