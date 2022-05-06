@@ -5,7 +5,8 @@ import os
 import random
 
 from clearml import Dataset, Task
-from clearml_darknet import Darknet, split_dataset
+from clearml_darknet import Darknet
+from clearml_darknet.utils import split_dataset
 
 
 dataset_path = Dataset.get(dataset_name='dataset-seatbelt', dataset_project='Tests/darknet').get_local_copy()

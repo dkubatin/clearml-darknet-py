@@ -1,6 +1,6 @@
 import pytest
 
-from clearml_darknet import split_dataset
+from clearml_darknet.utils import split_dataset
 from clearml_darknet.errors import DatasetError
 
 
