@@ -1,9 +1,9 @@
 import shutil
 
 import pytest
-from unittest import mock
-
 from clearml import Task
+
+from unittest import mock
 
 
 @pytest.fixture

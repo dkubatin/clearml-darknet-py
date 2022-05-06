@@ -2,7 +2,8 @@ import os
 
 import pytest
 
-from clearml_darknet import Darknet, split_dataset
+from clearml_darknet import Darknet
+from clearml_darknet.utils import split_dataset
 
 
 def test_darknet_init_success(dataset_path, task, darknet):
