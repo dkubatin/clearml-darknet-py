@@ -33,6 +33,8 @@ class Darknet:
             train: list,
             valid: list,
             weight_path: str = None,
+            save_weights_from_n_iterations: int = None,
+            save_weights_every_n_iterations: int = None,
             save_path_weights: str = './weights'
     ):
         """
@@ -43,6 +45,8 @@ class Darknet:
         :param train: Path to the list of images for training.
         :param valid: Path to the list of images for validation.
         :param weight_path: Path to the file with weights (additional training).
+        :param save_weights_from_n_iterations: Save weights from N iterations
+        :param save_weights_every_n_iterations: Save weights every N iterations.
         :param save_path_weights: Path to the save weights.
         """
         self.__task = task
@@ -51,6 +55,8 @@ class Darknet:
         self.__config_path = config_path
         self.__classes_path = classes_path
         self.__weight_path = weight_path
+        self.__save_weights_from_n_iterations = save_weights_from_n_iterations
+        self.__save_weights_every_n_iterations = save_weights_every_n_iterations
         self.__save_path_weights = save_path_weights
 
         # validate params
@@ -68,6 +74,10 @@ class Darknet:
             raise ValueError('List of training samples is empty.')
         if len(valid) == 0:
             raise ValueError('List of validating samples is empty.')
+        if isinstance(save_weights_from_n_iterations, int) and 0 >= save_weights_from_n_iterations:
+            raise ValueError('The parameter to save weights from N iterations must be greater than 0')
+        if isinstance(save_weights_every_n_iterations, int) and 0 >= save_weights_every_n_iterations:
+            raise ValueError('The parameter to save weights every N iterations must be greater than 0')
 
         self.__task_hyperparameters = self.__task.get_parameters_as_dict()
         self.__net_hyperparameters = {}
@@ -104,6 +114,17 @@ class Darknet:
         checkpoint_re = re.findall(r'Saving weights to (.*)', line)
         if checkpoint_re:
             return checkpoint_re[0]
+
+    @staticmethod
+    def _parse_checkpoint_iteration(line: str) -> typing.Optional[int]:
+        """Parses the iteration number in the weights storage path string.
+
+        :param line: Text string.
+        :return: int | None
+        """
+        checkpoint_iteration_re = re.findall(r'[a-zA-Z\d_-]+_+(\d+)\.weight', line)
+        if checkpoint_iteration_re:
+            return int(checkpoint_iteration_re[0])
 
     @staticmethod
     def _parse_iteration(line: str) -> typing.Optional[int]:
@@ -306,6 +327,19 @@ class Darknet:
 
         return iteration, learning_rate, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy
 
+    def _is_save_iteration_weights(self, checkpoint_iteration: int, iteration_difference: int) -> bool:
+        """Checks whether iterative weights can be stored or not.
+
+        :param checkpoint_iteration: Checkpoint iteration number.
+        :param iteration_difference: Difference between the checkpoint iteration number and
+        the last iteration of saving weights.
+        :return: bool.
+        """
+        condition_1 = (self.__save_weights_from_n_iterations and
+                       self.__save_weights_from_n_iterations <= checkpoint_iteration)
+        condition_2 = iteration_difference >= self.__save_weights_every_n_iterations
+        return condition_1 and condition_2
+
     def _train(self, obj_data: str, type_: str, **kwargs) -> None:
         """Running network training.
 
@@ -394,7 +428,8 @@ class Darknet:
         :param stream: asyncio.StreamReader.
         :param is_stdout: Is a stdout stream.
         """
-        last_iteration = None
+        last_iteration = 0
+        last_save_weights_iteration = 0
         while True:
             line = await stream.readline()
             line_decode = line.decode().strip()
@@ -405,8 +440,10 @@ class Darknet:
                 if is_stdout:
                     iteration, lr, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy = \
                         self._process_output(line_decode)
+
                     if iteration is not None:
                         last_iteration = iteration
+
                     self._send_stream_data_to_task(
                         last_iteration,
                         iteration=iteration,
@@ -421,6 +458,17 @@ class Darknet:
                 else:
                     checkpoint = self._parse_checkpoint(line_decode)
                     if checkpoint:
-                        self.__task.upload_artifact(name=os.path.basename(checkpoint), artifact_object=checkpoint)
+                        checkpoint_iteration = self._parse_checkpoint_iteration(checkpoint)
+                        if checkpoint_iteration is None or not self.__save_weights_every_n_iterations:
+                            self.__task.upload_artifact(
+                                name=os.path.basename(checkpoint), artifact_object=checkpoint
+                            )
+                        else:
+                            iteration_difference = checkpoint_iteration - last_save_weights_iteration
+                            if self._is_save_iteration_weights(checkpoint_iteration, iteration_difference):
+                                self.__task.upload_artifact(
+                                    name=os.path.basename(checkpoint), artifact_object=checkpoint
+                                )
+                                last_save_weights_iteration = checkpoint_iteration
             else:
                 break

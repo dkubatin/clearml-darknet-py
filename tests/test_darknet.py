@@ -158,3 +158,13 @@ def test_darknet_init_failed_reading_config():
 def test_darknet_init_failed_reading_parameter_config():
     # ToDo: add test
     pass
+
+
+def test_darknet_init_failed_save_weights_from_n_iterations():
+    # ToDo: add test
+    pass
+
+
+def test_darknet_init_failed_save_weights_ever_n_iterations():
+    # ToDo: add test
+    pass
