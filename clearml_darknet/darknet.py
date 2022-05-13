@@ -4,8 +4,8 @@ Darknet learning package via ClearML
 import os
 import re
 import typing
+import asyncio
 import tempfile
-import subprocess
 
 from clearml import Task
 
@@ -321,56 +321,7 @@ class Darknet:
         command.append('-map') if kwargs.get('calc_map') else ...
         command.append('-topk') if kwargs.get('calc_acc') else ...
 
-        process: subprocess.Popen = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-
-        last_iteration = None
-        while True:
-            line: bytes = process.stdout.readline()
-            if not line:
-                break
-            line_decoded: str = line.decode("utf-8").strip('\n')
-
-            print(line_decoded)
-
-            iteration, learning_rate, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy = \
-                self._process_output(line_decoded)
-
-            if iteration is not None:
-                last_iteration = iteration
-            if learning_rate:
-                self.__task.logger.report_scalar(
-                    title='learning rate', series='series', value=learning_rate, iteration=last_iteration
-                )
-            if avg_loss:
-                self.__task.logger.report_scalar(
-                    title='avg_loss', series='series', value=avg_loss, iteration=last_iteration
-                )
-            if mean_avg_precision:
-                self.__task.logger.report_scalar(
-                    title='mAP@0.50', series='series', value=mean_avg_precision, iteration=last_iteration
-                )
-            if precision:
-                self.__task.logger.report_scalar(
-                    title='precision', series='series', value=precision, iteration=last_iteration
-                )
-            if recall:
-                self.__task.logger.report_scalar(
-                    title='recall', series='series', value=recall, iteration=last_iteration
-                )
-            if f1_score:
-                self.__task.logger.report_scalar(
-                    title='f1_score', series='series', value=f1_score, iteration=last_iteration
-                )
-            if accuracy:
-                self.__task.logger.report_scalar(
-                    title='accuracy', series='series', value=accuracy, iteration=last_iteration
-                )
-
-            checkpoint = self._parse_checkpoint(line_decoded)
-            if checkpoint:
-                self.__task.upload_artifact(name=os.path.basename(checkpoint), artifact_object=checkpoint)
+        asyncio.run(self._run_process(command))
 
     def train_detector(self) -> None:
         """Starting the Detector Learning."""
@@ -386,3 +337,90 @@ class Darknet:
         type_ = 'classifier'
         obj_data = self._gen_obj_file(type_=type_, top=top)
         self._train(obj_data, type_=type_, calc_acc=True)
+
+    async def _run_process(self, command: list) -> None:
+        """Starts the learning process of the neural network.
+
+        :param command: Executable command.
+        """
+        process = await asyncio.create_subprocess_exec(
+            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        await asyncio.gather(
+            self._stream_process(process.stdout, is_stdout=True),
+            self._stream_process(process.stderr)
+        )
+        await process.wait()
+
+    def _send_stream_data_to_task(self, last_iteration: int, **kwargs) -> None:
+        """Sends stream data to a task.
+
+        :param last_iteration: Number of the last training iteration.
+        """
+        if kwargs['lr']:
+            self.__task.logger.report_scalar(
+                title='lr', series='series', value=kwargs['lr'], iteration=last_iteration
+            )
+        if kwargs['avg_loss']:
+            self.__task.logger.report_scalar(
+                title='avg_loss', series='series', value=kwargs['avg_loss'], iteration=last_iteration
+            )
+        if kwargs['mean_avg_precision']:
+            self.__task.logger.report_scalar(
+                title='mAP@0.50', series='series', value=kwargs['mean_avg_precision'], iteration=last_iteration
+            )
+        if kwargs['precision']:
+            self.__task.logger.report_scalar(
+                title='precision', series='series', value=kwargs['precision'], iteration=last_iteration
+            )
+        if kwargs['recall']:
+            self.__task.logger.report_scalar(
+                title='recall', series='series', value=kwargs['recall'], iteration=last_iteration
+            )
+        if kwargs['f1_score']:
+            self.__task.logger.report_scalar(
+                title='f1_score', series='series', value=kwargs['f1_score'], iteration=last_iteration
+            )
+        if kwargs['accuracy']:
+            self.__task.logger.report_scalar(
+                title='accuracy', series='series', value=kwargs['accuracy'], iteration=last_iteration
+            )
+
+    async def _stream_process(self, stream: asyncio.StreamReader, is_stdout: bool = False) -> None:
+        """Reads streaming data from the training process and sends it to the task.
+
+        Also, here is the process of upload weights.
+
+        :param stream: asyncio.StreamReader.
+        :param is_stdout: Is a stdout stream.
+        """
+        last_iteration = None
+        while True:
+            line = await stream.readline()
+            line_decode = line.decode().strip()
+
+            if line:
+                print(line_decode)
+
+                if is_stdout:
+                    iteration, lr, avg_loss, mean_avg_precision, precision, recall, f1_score, accuracy = \
+                        self._process_output(line_decode)
+                    if iteration is not None:
+                        last_iteration = iteration
+                    self._send_stream_data_to_task(
+                        last_iteration,
+                        iteration=iteration,
+                        lr=lr,
+                        avg_loss=avg_loss,
+                        mean_avg_precision=mean_avg_precision,
+                        precision=precision,
+                        recall=recall,
+                        f1_score=f1_score,
+                        accuracy=accuracy
+                    )
+                else:
+                    checkpoint = self._parse_checkpoint(line_decode)
+                    if checkpoint:
+                        self.__task.upload_artifact(name=os.path.basename(checkpoint), artifact_object=checkpoint)
+            else:
+                break
