@@ -17,7 +17,7 @@ setup(
     keywords=["darknet", "clearml", "machine-learning", "deep-learning", "neural-network"],
     platforms="any",
     packages=['clearml_darknet'],
-    python_requires=">=3.4",
+    python_requires=">=3.6",
     install_requires=['clearml==1.3.2'],
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -30,7 +30,9 @@ setup(
         'Topic :: Software Development :: Version Control',
         'Topic :: System :: Logging',
         'Topic :: System :: Monitoring',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8'
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'
     ]
 )
