@@ -7,14 +7,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name='clearml-darknet-py',
     version='0.2.0-alpha',
-    description='Python package for training neural networks through the Darknet framework in ClearML',
+    description='The library reproduces the reproduction of neural networks on the Darknet framework in ClearML',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/dkubatin/clearml-darknet-py',
     author='Denis Kubatin',
     author_email='kubatin.denis@gmail.com',
     license='MIT',
-    keywords=["darknet", "clearml"],
+    keywords=["darknet", "clearml", "machine-learning", "deep-learning", "neural-network"],
     platforms="any",
     packages=['clearml_darknet'],
     python_requires=">=3.4",
@@ -25,6 +25,11 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX :: Linux',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Version Control',
+        'Topic :: System :: Logging',
+        'Topic :: System :: Monitoring',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8'
     ]
