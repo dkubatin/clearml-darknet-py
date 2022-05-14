@@ -19,6 +19,8 @@ class Darknet:
 
     Methods
     -------
+    set_subprocess_buffer_size()
+        Changes the subprocess buffer size.
     train_detector()
         Starts the learning process of the detector.
     train_classifier(top: int)
@@ -58,6 +60,8 @@ class Darknet:
         self.__save_weights_from_n_iterations = save_weights_from_n_iterations
         self.__save_weights_every_n_iterations = save_weights_every_n_iterations
         self.__save_path_weights = save_path_weights
+
+        self.__subprocess_buffer_size = 8224 * 8224
 
         # validate params
         if not os.path.isfile(self.__darknet_exec):
@@ -372,13 +376,25 @@ class Darknet:
         obj_data = self._gen_obj_file(type_=type_, top=top)
         self._train(obj_data, type_=type_, calc_acc=True)
 
+    def set_subprocess_buffer_size(self, buffer_size: int) -> None:
+        """Changes the subprocess buffer size.
+
+        :param buffer_size: int. DEFAULT: 8224 * 8224.
+        """
+        if 0 >= buffer_size:
+            raise ValueError('The parameter to buffer_size must be greater than 0')
+        self.__subprocess_buffer_size = buffer_size
+
     async def _run_process(self, command: list) -> None:
         """Starts the learning process of the neural network.
 
         :param command: Executable command.
         """
         process = await asyncio.create_subprocess_exec(
-            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            limit=self.__subprocess_buffer_size
         )
         await asyncio.gather(
             self._stream_process(process.stdout, is_stdout=True),
