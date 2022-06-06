@@ -26,6 +26,7 @@ class Darknet:
     train_classifier(top: int)
         Starts the classifier training process.
     """
+
     def __init__(
             self,
             task: Task,
@@ -35,7 +36,7 @@ class Darknet:
             train: list,
             valid: list,
             weight_path: str = None,
-            save_weights_from_n_iterations: int = None,
+            save_weights_from_n_iterations: int = 1,
             save_weights_every_n_iterations: int = None,
             save_path_weights: str = './weights'
     ):
@@ -339,10 +340,15 @@ class Darknet:
         the last iteration of saving weights.
         :return: bool.
         """
-        condition_1 = (self.__save_weights_from_n_iterations and
-                       self.__save_weights_from_n_iterations <= checkpoint_iteration)
-        condition_2 = iteration_difference >= self.__save_weights_every_n_iterations
-        return condition_1 and condition_2
+        if ((checkpoint_iteration >= self.__save_weights_from_n_iterations) and
+                not self.__save_weights_every_n_iterations):
+            return True
+        elif (
+                (checkpoint_iteration >= self.__save_weights_from_n_iterations) and
+                (iteration_difference >= self.__save_weights_every_n_iterations)
+        ):
+            return True
+        return False
 
     def _train(self, obj_data: str, type_: str, **kwargs) -> None:
         """Running network training.
@@ -475,16 +481,17 @@ class Darknet:
                     checkpoint = self._parse_checkpoint(line_decode)
                     if checkpoint:
                         checkpoint_iteration = self._parse_checkpoint_iteration(checkpoint)
-                        if checkpoint_iteration is None or not self.__save_weights_every_n_iterations:
+                        is_save_iteration_weights = False
+                        if checkpoint_iteration:
+                            iteration_difference = checkpoint_iteration - last_save_weights_iteration
+                            is_save_iteration_weights = self._is_save_iteration_weights(
+                                checkpoint_iteration, iteration_difference
+                            )
+                        if not checkpoint_iteration or is_save_iteration_weights:
                             self.__task.upload_artifact(
                                 name=os.path.basename(checkpoint), artifact_object=checkpoint
                             )
-                        else:
-                            iteration_difference = checkpoint_iteration - last_save_weights_iteration
-                            if self._is_save_iteration_weights(checkpoint_iteration, iteration_difference):
-                                self.__task.upload_artifact(
-                                    name=os.path.basename(checkpoint), artifact_object=checkpoint
-                                )
-                                last_save_weights_iteration = checkpoint_iteration
+                        if is_save_iteration_weights:
+                            last_save_weights_iteration = checkpoint_iteration
             else:
                 break
