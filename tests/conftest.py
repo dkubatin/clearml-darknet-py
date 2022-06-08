@@ -67,3 +67,12 @@ def darknet(tmpdir):
     darknet.write_binary(b'...')
     yield darknet
     shutil.rmtree(str(tmp_path))
+
+
+@pytest.fixture()
+def failed_config_path(tmpdir):
+    tmp_path = tmpdir.mkdir("config")
+    config = tmp_path / "config.sql"
+    config.write_binary(b'...')
+    yield config
+    shutil.rmtree(str(tmp_path))
