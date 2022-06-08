@@ -82,7 +82,7 @@ class Darknet:
             raise ValueError('List of training samples is empty.')
         if len(valid) == 0:
             raise ValueError('List of validating samples is empty.')
-        if not is_save_weights and save_weights_from_n_iterations > 1 or save_weights_every_n_iterations is not None:
+        if not is_save_weights and (save_weights_from_n_iterations > 1 or save_weights_every_n_iterations is not None):
             raise ValueError('The parameter to save the weights must be True '
                              'if the rest of the parameters related to the weights are used.')
         if isinstance(save_weights_from_n_iterations, int) and 0 >= save_weights_from_n_iterations:
