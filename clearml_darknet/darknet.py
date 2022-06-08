@@ -68,15 +68,15 @@ class Darknet:
         self.__subprocess_buffer_size = 8224 * 8224
 
         # validate params
-        if not os.path.isfile(self.__darknet_exec):
-            raise FileNotFoundError(f'Darknet file not found on path: {self.__darknet_exec}')
-        if not os.path.isfile(self.__config_path):
-            raise FileNotFoundError(f'Config file not found on path: {self.__config_path}')
-        if self.__weight_path and not os.path.isfile(self.__weight_path):
-            raise FileNotFoundError(f'Weight file not found on path: {self.__weight_path}')
-        if not os.path.isfile(self.__classes_path):
-            raise FileNotFoundError(f'Class file not found on path: {self.__classes_path}')
-        if os.path.getsize(self.__classes_path) == 0:
+        if not os.path.isfile(darknet_exec):
+            raise FileNotFoundError(f'Darknet file not found on path: {darknet_exec}')
+        if not os.path.isfile(config_path):
+            raise FileNotFoundError(f'Config file not found on path: {config_path}')
+        if weight_path and not os.path.isfile(weight_path):
+            raise FileNotFoundError(f'Weight file not found on path: {weight_path}')
+        if not os.path.isfile(classes_path):
+            raise FileNotFoundError(f'Class file not found on path: {classes_path}')
+        if os.path.getsize(classes_path) == 0:
             raise ValueError('Classes file is empty')
         if len(train) == 0:
             raise ValueError('List of training samples is empty.')
