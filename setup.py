@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='clearml-darknet-py',
-    version='0.2.0-alpha.1',
+    version='0.2.0-alpha.2',
     description='The library reproduces the reproduction of neural networks on the Darknet framework in ClearML',
     long_description=long_description,
     long_description_content_type="text/markdown",
