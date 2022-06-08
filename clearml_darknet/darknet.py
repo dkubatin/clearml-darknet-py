@@ -36,6 +36,7 @@ class Darknet:
             train: list,
             valid: list,
             weight_path: str = None,
+            is_save_weights: bool = True,
             save_weights_from_n_iterations: int = 1,
             save_weights_every_n_iterations: int = None,
             save_path_weights: str = './weights'
@@ -48,6 +49,7 @@ class Darknet:
         :param train: Path to the list of images for training.
         :param valid: Path to the list of images for validation.
         :param weight_path: Path to the file with weights (additional training).
+        :param is_save_weights: Save training weights.
         :param save_weights_from_n_iterations: Save weights from N iterations
         :param save_weights_every_n_iterations: Save weights every N iterations.
         :param save_path_weights: Path to the save weights.
@@ -58,6 +60,7 @@ class Darknet:
         self.__config_path = config_path
         self.__classes_path = classes_path
         self.__weight_path = weight_path
+        self.__is_save_weights = is_save_weights
         self.__save_weights_from_n_iterations = save_weights_from_n_iterations
         self.__save_weights_every_n_iterations = save_weights_every_n_iterations
         self.__save_path_weights = save_path_weights
@@ -79,6 +82,9 @@ class Darknet:
             raise ValueError('List of training samples is empty.')
         if len(valid) == 0:
             raise ValueError('List of validating samples is empty.')
+        if not is_save_weights and save_weights_from_n_iterations > 1 or save_weights_every_n_iterations is not None:
+            raise ValueError('The parameter to save the weights must be True '
+                             'if the rest of the parameters related to the weights are used.')
         if isinstance(save_weights_from_n_iterations, int) and 0 >= save_weights_from_n_iterations:
             raise ValueError('The parameter to save weights from N iterations must be greater than 0')
         if isinstance(save_weights_every_n_iterations, int) and 0 >= save_weights_every_n_iterations:
@@ -478,20 +484,21 @@ class Darknet:
                         accuracy=accuracy
                     )
                 else:
-                    checkpoint = self._parse_checkpoint(line_decode)
-                    if checkpoint:
-                        checkpoint_iteration = self._parse_checkpoint_iteration(checkpoint)
-                        is_save_iteration_weights = False
-                        if checkpoint_iteration:
-                            iteration_difference = checkpoint_iteration - last_save_weights_iteration
-                            is_save_iteration_weights = self._is_save_iteration_weights(
-                                checkpoint_iteration, iteration_difference
-                            )
-                        if not checkpoint_iteration or is_save_iteration_weights:
-                            self.__task.upload_artifact(
-                                name=os.path.basename(checkpoint), artifact_object=checkpoint
-                            )
-                        if is_save_iteration_weights:
-                            last_save_weights_iteration = checkpoint_iteration
+                    if self.__is_save_weights:
+                        checkpoint = self._parse_checkpoint(line_decode)
+                        if checkpoint:
+                            checkpoint_iteration = self._parse_checkpoint_iteration(checkpoint)
+                            is_save_iteration_weights = False
+                            if checkpoint_iteration:
+                                iteration_difference = checkpoint_iteration - last_save_weights_iteration
+                                is_save_iteration_weights = self._is_save_iteration_weights(
+                                    checkpoint_iteration, iteration_difference
+                                )
+                            if not checkpoint_iteration or is_save_iteration_weights:
+                                self.__task.upload_artifact(
+                                    name=os.path.basename(checkpoint), artifact_object=checkpoint
+                                )
+                            if is_save_iteration_weights:
+                                last_save_weights_iteration = checkpoint_iteration
             else:
                 break

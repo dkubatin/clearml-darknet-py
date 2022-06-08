@@ -165,6 +165,6 @@ def test_darknet_init_failed_save_weights_from_n_iterations():
     pass
 
 
-def test_darknet_init_failed_save_weights_ever_n_iterations():
+def test_darknet_init_failed_is_save_weights():
     # ToDo: add test
     pass
