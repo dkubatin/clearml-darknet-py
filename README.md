@@ -1,4 +1,4 @@
-<div style="text-align: center">
+<div align="center" style="text-align: center">
 
 <p style="text-align: center">
   <img src="docs/clearml-darknet-logo.png" alt="ClearML Darknet">
