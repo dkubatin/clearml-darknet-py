@@ -166,7 +166,7 @@ class Darknet:
         :param line: Text string.
         :return: avg_loss | None.
         """
-        loss_re = re.findall(r"[\d.|\-nan]+, ([\d.|\-nan]+) avg", line)
+        loss_re = re.findall(r"[\d.|\-nan|inf]+, ([\d.|\-nan|inf]+) avg", line)
         if loss_re:
             return float(loss_re[0])
 
